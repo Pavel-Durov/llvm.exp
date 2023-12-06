@@ -31,4 +31,9 @@
 *.out
 *.app
 
-./test*
+# src files
+./test.*
+
+# output files
+out.ll
+eva-llvm

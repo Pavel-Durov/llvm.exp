@@ -1,4 +1,12 @@
-### Tools
+# LLVM Tools
+
+Content of `test.cpp` used in the examples:
+
+```cpp
+int main(){
+  return 42;
+}
+```
 ## Clang C - clang++
 
 Since clang++ is built on top of LLVM, we can use it to emit LLVM IR:
