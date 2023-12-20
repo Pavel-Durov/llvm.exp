@@ -1,10 +1,10 @@
-# include "./EvaLLVM.h"
+#include "./EvaLLVM.h"
 
-int main (int argc, char const *argv[]) { 
-    std::string program = "42";
-    EvaLLVM vm;
+int main(int argc, char const *argv[]) {
+  std::string program = "42";
+  EvaLLVM vm;
 
-    vm.exec(program);
+  vm.exec(program);
 
-    return 42; 
+  return 0;
 }
