@@ -11,7 +11,10 @@
 class EvaLLVM {
 
 public:
-  EvaLLVM() { moduleInit(); }
+  EvaLLVM() {
+    moduleInit();
+    setupExternFuncs();
+  }
 
   void exec(const std::string &program) {
     compile();
@@ -27,15 +30,25 @@ private:
                         llvm::FunctionType::get(builder->getInt32Ty(), false));
 
     auto result = gen();
-
-    auto i32Result =
-        builder->CreateIntCast(result, llvm::Type::getInt32Ty(*ctx), true);
-    builder->CreateRet(i32Result);
+    builder->CreateRet(builder->getInt32(0));
   }
 
+  // main compile loop
   llvm::Value *gen() {
-    // TODO: implement
-    return builder->getInt32(0);
+    auto str = builder->CreateGlobalStringPtr("Hello, World!");
+    auto printfFn = module->getFunction("printf");
+    // args:
+    std::vector<llvm::Value *> args{str};
+    auto call = builder->CreateCall(printfFn, args);
+    return call;
+  }
+
+  void setupExternFuncs() {
+    auto bytePrtType = builder->getInt8Ty()->getPointerTo();
+    // standard library printf function
+    module->getOrInsertFunction(
+        "printf",
+        llvm::FunctionType::get(builder->getInt32Ty(), bytePrtType, true));
   }
 
   llvm::Function *createFunction(const std::string &fName,

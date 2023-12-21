@@ -1,0 +1,77 @@
+
+// Lexical grammar (tokens):
+%lex
+
+%%
+\/\/.*              %empty
+\s+                 %empty
+V\*[\s\S]*?\*\/     %empty
+
+\d+                 NUMBER
+\"[^\"]*\"          STRING
+[\w\-+*=!<>/]+      SYMBOL
+
+/lex
+
+// ------------------------
+// Syntactic grammar (BNF):
+
+%{
+#include <string>
+#include <vector>
+
+enum class ExpType {
+    NUMBER,
+    STRING, 
+    SYMBOL, 
+    LIST,
+};
+
+struct Exp { 
+    ExpType type;
+    int number;
+    std::string string;
+    std::vector<Exp> list;
+    
+    // Numbers
+    Exp(int number): type(ExpType::Number), number(number) {}
+    
+    // Strings, Symbols
+    // Strings, Symbols:
+    Exp (std: :string& strVal) {
+        if (strVal[0] == '"') {
+            type = ExpType::String;
+            string = strVal.substr(1, strVal.size() - 2);
+        } else {
+            type = ExpType::Symbol;
+            string = strVal;
+        ｝
+    ｝
+
+    // Lists
+    Exp(std: :vector<Exp> list) : type(ExpType: :List), list(list) }
+};
+
+%}
+using Value = Exp;
+%%
+
+Exp
+    : Atom
+    | List
+    ;
+
+Atom
+    : NUMBER { $$ = Exp(std::atoi($1))}
+    | STRING { $$ = Exp($1)}
+    | SYMBOL { $$ = Exp($1)}
+    ;
+
+List
+    : '(' ListEntries ')' { $$ = $2 }
+    ;
+
+ListEntries
+    : %empty { $$ = Exp(std::vector<Exp>{})}
+    | ListEntries Exp { $1.list.push_back($2); $$ = $1 }
+    ;
