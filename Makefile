@@ -13,6 +13,9 @@ compile:
 compile-run: compile
 	${OUT}
 
+parser-gen:
+	syntax-cli -g ./src/parser/EvaGrammar.bnf -m LALR1 -o ./src/parser/EvaGrammar.h
+
 run: compile-run
 	lli ${OUT_LL}
 
