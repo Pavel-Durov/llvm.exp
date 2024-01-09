@@ -7,8 +7,11 @@ OUT=./eva-llvm
 OUT_LL=./out.ll
 EVA_SRC=src/eva-llvm.cpp
 
-compile:
-	clang++ ${LINK_FLAGS} ${LLVM_CONFIG_FLAGS} ${EVA_SRC} -o ${OUT}
+clean:
+	rm -f ${OUT} ${OUT_LL}
+	
+compile: clean
+	clang++ ${LINK_FLAGS} ${LLVM_CONFIG_FLAGS} ${EVA_SRC} -o ${OUT} -fexceptions
 
 compile-run: compile
 	${OUT}
