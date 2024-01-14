@@ -7,13 +7,19 @@ OUT=./eva-llvm
 OUT_LL=./out.ll
 EVA_SRC=src/eva-llvm.cpp
 
-compile:
-	clang++ ${LINK_FLAGS} ${LLVM_CONFIG_FLAGS} ${EVA_SRC} -o ${OUT}
+clean:
+	rm -f ${OUT} ${OUT_LL}
+	
+compile: clean
+	clang++ ${LINK_FLAGS} ${LLVM_CONFIG_FLAGS} ${EVA_SRC} -o ${OUT} -fexceptions
 
 compile-run: compile
 	${OUT}
 
-run: compile-run
+parser-gen:
+	syntax-cli -g ./src/parser/EvaGrammar.bnf -m LALR1 -o ./src/parser/EvaParser.h
+
+run: parser-gen compile-run
 	lli ${OUT_LL}
 
 llvm-flags:

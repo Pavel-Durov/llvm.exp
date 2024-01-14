@@ -2,19 +2,27 @@
 #define Eva_h
 
 #include "iostream"
+#include "parser/EvaParser.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
+#include <regex>
 #include <string>
+
+using syntax::EvaParser;
 
 class EvaLLVM {
 
 public:
-  EvaLLVM() { moduleInit(); }
+  EvaLLVM() : parser(std::make_unique<EvaParser>()) {
+    moduleInit();
+    setupExternFuncs();
+  }
 
   void exec(const std::string &program) {
-    compile();
+    auto ast = parser->parse(program);
+    compile(ast);
     // print module to the output stream
     module->print(llvm::outs(), nullptr);
     // save to file
@@ -22,20 +30,49 @@ public:
   }
 
 private:
-  void compile() {
+  void compile(const Exp &ast) {
+    // create main function
     fn = createFunction("main",
                         llvm::FunctionType::get(builder->getInt32Ty(), false));
 
-    auto result = gen();
-
-    auto i32Result =
-        builder->CreateIntCast(result, llvm::Type::getInt32Ty(*ctx), true);
-    builder->CreateRet(i32Result);
+    auto result = gen(ast);
+    builder->CreateRet(builder->getInt32(0));
   }
 
-  llvm::Value *gen() {
-    // TODO: implement
+  // main compile loop
+  llvm::Value *gen(const Exp &exp) {
+    switch (exp.type) {
+    case ExpType::NUMBER:
+      return builder->getInt32(exp.number);
+    case ExpType::STRING: {
+      auto re = std::regex("\\\\n");
+      auto str = std::regex_replace(exp.string, re, "\n");
+      return builder->CreateGlobalStringPtr(str);
+    }
+    case ExpType::SYMBOL:
+      // TODO: handle symbols
+      return builder->getInt32(0);
+    case ExpType::LIST:
+      auto tag = exp.list[0];
+      if (tag.type == ExpType::SYMBOL && tag.string == "printf") {
+        auto printfFn = module->getFunction("printf");
+        std::vector<llvm::Value *> args{};
+        for (auto i = 1; i < exp.list.size(); i++) {
+          args.push_back(gen(exp.list[i]));
+        }
+        return builder->CreateCall(printfFn, args);
+      }
+    }
+    // Unreachable
     return builder->getInt32(0);
+  }
+
+  void setupExternFuncs() {
+    auto bytePrtType = builder->getInt8Ty()->getPointerTo();
+    // standard library printf function
+    module->getOrInsertFunction(
+        "printf",
+        llvm::FunctionType::get(builder->getInt32Ty(), bytePrtType, true));
   }
 
   llvm::Function *createFunction(const std::string &fName,
@@ -78,6 +115,9 @@ private:
     module = std::make_unique<llvm::Module>("EvaLLVM", *ctx);
     builder = std::make_unique<llvm::IRBuilder<>>(*ctx);
   }
+  // Parser
+  std::unique_ptr<EvaParser> parser;
+
   // Currently compiling function
   llvm::Function *fn;
 
