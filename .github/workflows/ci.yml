@@ -7,14 +7,17 @@ on:
 
 jobs:
   Test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: true
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@v1
-        with:
-            version: "17.0"
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y llvm clang
+
       - name: "Build and Run"
         run: make compile-run
