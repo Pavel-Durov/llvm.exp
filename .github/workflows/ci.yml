@@ -1,0 +1,23 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install LLVM and Clang
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y llvm clang
+
+      - name: "Build and Run"
+        run: make compile-run
