@@ -13,6 +13,9 @@ clean:
 compile: clean
 	clang++ ${LINK_FLAGS} ${LLVM_CONFIG_FLAGS} ${EVA_SRC} -o ${OUT} -fexceptions
 
+format:
+	find . -type f -name "*.cpp" -o -name "*.h" -exec clang-format -i {} \;
+
 compile-run: compile
 	${OUT}
 
@@ -24,6 +27,3 @@ run: parser-gen compile-run
 
 llvm-flags:
 	@echo $(LLVM_CONFIG_FLAGS)
-
-lint:
-	clang-format -i ./src/*.cpp ./src/*.h
