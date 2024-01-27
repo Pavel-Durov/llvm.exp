@@ -32,10 +32,11 @@ public:
 private:
   void compile(const Exp &ast) {
     // create main function
-    fn = createFunction("main",
-                        llvm::FunctionType::get(builder->getInt32Ty(), false));
+    createFunction("main",
+                   llvm::FunctionType::get(builder->getInt32Ty(), false));
 
-    auto result = gen(ast);
+    createGlobalVar("VERSION", builder->getInt32(666));
+    gen(ast);
     builder->CreateRet(builder->getInt32(0));
   }
 
@@ -50,23 +51,49 @@ private:
       return builder->CreateGlobalStringPtr(str);
     }
     case ExpType::SYMBOL:
-      // TODO: handle symbols
+      // Boolean
+      if (exp.string == "true" || exp.string == "false") {
+        return builder->getInt1(exp.string == "true" ? true : false);
+      } else {
+        // Variables
+        return module->getNamedGlobal(exp.string)->getInitializer();
+      }
+
       return builder->getInt32(0);
+
     case ExpType::LIST:
       auto tag = exp.list[0];
-      if (tag.type == ExpType::SYMBOL && tag.string == "printf") {
-        auto printfFn = module->getFunction("printf");
-        std::vector<llvm::Value *> args{};
-        for (auto i = 1; i < exp.list.size(); i++) {
-          args.push_back(gen(exp.list[i]));
+      if (tag.type == ExpType::SYMBOL) {
+        auto op = tag.string;
+
+        // Variables declaration: (var x (+ y 10))
+        if (op == "var") {
+          auto varName = exp.list[1].string;
+          auto init = gen(exp.list[2]);
+          return createGlobalVar(varName, (llvm::Constant *)init);
+        } else if (tag.string == "printf") {
+          auto printfFn = module->getFunction("printf");
+          std::vector<llvm::Value *> args{};
+          for (auto i = 1; i < exp.list.size(); i++) {
+            args.push_back(gen(exp.list[i]));
+          }
+          return builder->CreateCall(printfFn, args);
         }
-        return builder->CreateCall(printfFn, args);
       }
     }
     // Unreachable
     return builder->getInt32(0);
   }
 
+  llvm::GlobalVariable *createGlobalVar(const std::string &name,
+                                        llvm::Constant *init) {
+    module->getOrInsertGlobal(name, init->getType());
+    auto variable = module->getNamedGlobal(name);
+    variable->setAlignment(llvm::MaybeAlign(4));
+    variable->setConstant(false);
+    variable->setInitializer(init);
+    return variable;
+  }
   void setupExternFuncs() {
     auto bytePrtType = builder->getInt8Ty()->getPointerTo();
     // standard library printf function
